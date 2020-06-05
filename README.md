@@ -26,7 +26,7 @@ server {
     listen 443 http2 ssl;
     listen [::]:443 http2 ssl;
 
-    server_name idp.oss.net.bd;
+    server_name jenkins.assad.com;
 
     ssl_certificate "/home/cent-node141/certificate/server.crt";
     ssl_certificate_key "/home/cent-node141/certificate/keyfile.key";
