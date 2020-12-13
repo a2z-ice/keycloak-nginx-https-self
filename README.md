@@ -1,3 +1,70 @@
+# Docker with ssl
+<pre><code>
+----------------------------------------------docker ssl start--------------------------
+version: '3.7'
+
+networks:
+  default:
+    external:
+      name: host
+
+services:
+  keycloak:
+    container_name: keycloak_app
+    image: jboss/keycloak
+    depends_on:
+      - mariadb
+    restart: always
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - "/srv/docker/keycloak/data/certs/:/etc/x509/https"   # map certificates to container
+    environment:
+      KEYCLOAK_USER: 
+      KEYCLOAK_PASSWORD: 
+      KEYCLOAK_HTTP_PORT: 8080
+      KEYCLOAK_HTTPS_PORT: 8443
+      KEYCLOAK_HOSTNAME: sub.example.ocm
+      DB_VENDOR: mariadb
+      DB_ADDR: localhost
+      DB_USER: keycloak
+      DB_PASSWORD: 
+    network_mode: host
+
+  mariadb:
+    container_name: keycloak_db
+    image: mariadb
+    volumes:
+      - "/srv/docker/keycloak/data/keycloak_db:/var/lib/mysql"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: 
+    network_mode: host
+Final directory setup
+This is how my final file and folder setup looks like.
+
+$ cd /srv/docker/keycloak/
+$ tree
+.
+├── config
+│   └── docker-compose.yml
+└── data
+    ├── certs
+    │   ├── tls.crt
+    │   └── tls.key
+    └── keycloak_db
+Start container
+Finally, I was able to start my software using docker-compose.
+
+$ cd /srv/docker/keycloak/config/
+$ sudo docker-compose up -d
+----------------------------------------------docker ssl end--------------------------
+</code></pre>
+
 <pre><code>
 vim /etc/nginx/conf.d/multi_host.conf
 server {
