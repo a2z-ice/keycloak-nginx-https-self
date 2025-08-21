@@ -1,0 +1,77 @@
+upstream idp-svc {
+
+   server <server-address>:<port>;
+}
+
+
+## for limiting access of admin
+geo $idpv2_allowed_ip {
+    default no;
+    103.106.118.2 yes;  # Replace with your allowed IP address
+    182.48.87.42 yes;
+    103.48.19.223  yes; # Add more IPs if needed
+    103.143.148.217  yes;
+}
+
+
+
+
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$host$request_uri;
+    server_tokens off;
+}
+server {
+    listen 443 http2 ssl;
+    server_name yourdomain.com;
+
+    access_log            /var/log/nginx/yourdomain.com.log;
+    ssl_certificate "/your/ssl/path/ssl.crt";
+    ssl_certificate_key "/your/ssl/path/ssl.key";
+    server_tokens off;
+    client_max_body_size 10M;
+    ssl_session_cache shared:SSL:1m;
+    ssl_session_timeout 60m;
+
+    ssl_prefer_server_ciphers       on;
+    ssl_protocols                   TLSv1.2 TLSv1.3;
+    ssl_ciphers                     ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+
+	proxy_buffers 4 256k;
+	proxy_buffer_size 128k; 
+	proxy_busy_buffers_size 256k;
+
+
+
+
+    location / {
+        proxy_pass https://idp-svc;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+	proxy_read_timeout 3600;
+	add_header Content-Security-Policy upgrade-insecure-requests;
+
+    }
+
+   location /admin{
+
+
+       if ($idpv2_allowed_ip = no) {
+            return 403;  # Return Forbidden for unauthorized IPs
+        }
+
+        proxy_pass http://idp-svc
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+
+    }
+
+
+
+}
